@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { fetchTaskByIdApi } from "../api/taskApi";
 import { formatDate, formatDateTime } from "../utils/format";
 import { useAuth } from "../context/AuthContext";
+import { getPriorityBadgeClass, getStatusBadgeClass } from "../utils/badges";
 
 export default function TaskDetails() {
   const { id } = useParams();
@@ -47,12 +48,18 @@ export default function TaskDetails() {
           <strong>Description:</strong> {task.description || "-"}
         </div>
 
-        <div className="mb-2">
-          <strong>Status:</strong> {task.status}
+        <div className="mb-2 d-flex align-items-center gap-2">
+          <strong>Status:</strong>
+          <span className={`badge ${getStatusBadgeClass(task.status)}`}>
+            {task.status}
+          </span>
         </div>
 
-        <div className="mb-2">
-          <strong>Priority:</strong> {task.priority}
+        <div className="mb-2 d-flex align-items-center gap-2">
+          <strong>Priority:</strong>
+          <span className={`badge ${getPriorityBadgeClass(task.priority)}`}>
+            {task.priority}
+          </span>
         </div>
 
         <div className="mb-2">
@@ -86,7 +93,11 @@ export default function TaskDetails() {
           </button>
           <button
             className="btn btn-primary"
-            onClick={() => navigate(`/tasks/${id}/edit`)}
+            onClick={() =>
+              navigate(`/tasks/${id}/edit`, {
+                state: { returnTo: `/tasks/${id}` },
+              })
+            }
           >
             Edit
           </button>

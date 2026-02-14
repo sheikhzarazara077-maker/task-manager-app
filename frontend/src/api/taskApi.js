@@ -1,6 +1,6 @@
 import axiosClient from "./axiosClient";
 
-export const fetchTasksApi = async ({ params }) => {
+export const fetchTasksApi = async (params) => {
   const res = await axiosClient.get("/tasks", { params });
   return res.data; // success,message, data:tasks[],metadata
 };
@@ -13,7 +13,7 @@ export const fetchTaskByIdApi = async (id) => {
   const res = await axiosClient.get(`/tasks/${id}`);
   return res.data; // success,message, data: task
 };
-export const udapteTaskApi = async (id, payload) => {
+export const updateTaskApi = async (id, payload) => {
   const res = await axiosClient.put(`/tasks/${id}`, payload);
   return res.data; // success,message, data: task
 };

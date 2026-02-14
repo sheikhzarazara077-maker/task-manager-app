@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { fetchTaskByIdApi, updateTaskApi } from "../api/taskApi";
 import TaskForm from "../components/TaskForm";
 import { useAuth } from "../context/AuthContext";
@@ -7,8 +7,13 @@ import { useAuth } from "../context/AuthContext";
 export default function TaskEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+
+  // ✅ Default fallback = TasksList
+  const returnTo = location.state?.returnTo || "/tasks";
 
   const [task, setTask] = useState(null);
   const [error, setError] = useState("");
@@ -17,10 +22,11 @@ export default function TaskEdit() {
     setError("");
     try {
       const res = await fetchTaskByIdApi(id);
-      // If admin-only populate is enabled, userId might be object; normalize to _id string
+
       const t = res.data;
       const normalizedUserId =
         t.userId && typeof t.userId === "object" ? t.userId._id : t.userId;
+
       setTask({ ...t, userId: normalizedUserId || "" });
     } catch (err) {
       navigate("/not-found", { replace: true });
@@ -36,7 +42,9 @@ export default function TaskEdit() {
     setError("");
     try {
       await updateTaskApi(id, payload);
-      navigate(`/tasks/${id}`, { replace: true });
+
+      // ✅ Smart redirect
+      navigate(returnTo, { replace: true });
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Update failed");
     }
@@ -53,7 +61,7 @@ export default function TaskEdit() {
         initialValues={task}
         isAdmin={isAdmin}
         onSubmit={submit}
-        onBack={() => navigate(`/tasks/${id}`)}
+        onBack={() => navigate(returnTo)}
         submitLabel="Save"
       />
     </div>

@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new error("useAuth must have AuthProvider");
+  if (!ctx) throw new Error("useAuth must have AuthProvider");
   return ctx;
 };
 //token,user,isAuthentication,login,logout = useAuth();

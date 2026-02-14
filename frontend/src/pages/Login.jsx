@@ -8,12 +8,22 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const justRegistered = Boolean(location.state?.justRegistered);
+
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (isAuthenticated) navigate("/tasks", { replace: true });
   }, [isAuthenticated, navigate]);
+
+  // Optional: clear the "justRegistered" state after showing it once
+  useEffect(() => {
+    if (!justRegistered) return;
+    // Replace current entry with same path but without state
+    navigate(".", { replace: true, state: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onChange = (e) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -47,6 +57,12 @@ export default function Login() {
         <div className="card shadow-sm">
           <div className="card-body p-4">
             <h3 className="mb-3">Login</h3>
+
+            {justRegistered && (
+              <div className="alert alert-success">
+                Registration successful. Please login.
+              </div>
+            )}
 
             {error && <div className="alert alert-danger">{error}</div>}
 

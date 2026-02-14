@@ -24,9 +24,11 @@ export default function TasksList() {
   const [tasks, setTasks] = useState([]);
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const load = async () => {
     setError("");
+    setLoading(true);
     try {
       const params = {
         page: query.page,
@@ -38,13 +40,17 @@ export default function TasksList() {
         ...(isAdmin && query.userId ? { userId: query.userId } : {}),
       };
 
-      const res = await fetchTasksApi(params); //res.data
+      const res = await fetchTasksApi(params); // payload: { success, message, data, meta }
       setTasks(res.data || []);
       setMeta(res.meta || null);
     } catch (err) {
       setError(
         err?.response?.data?.message || err?.message || "Failed to load tasks",
       );
+      setTasks([]);
+      setMeta(null);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -80,12 +86,13 @@ export default function TasksList() {
 
     try {
       await deleteTaskApi(id);
-      // reload current page
       load();
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Delete failed");
     }
   };
+
+  const showEmptyState = !loading && !error && tasks.length === 0;
 
   return (
     <div>
@@ -109,23 +116,64 @@ export default function TasksList() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="row g-3">
-        {tasks.map((t) => (
-          <div className="col-12 col-md-6 col-lg-4" key={t._id}>
-            <TaskCard
-              task={t}
-              onView={() => navigate(`/tasks/${t._id}`)}
-              onEdit={() => navigate(`/tasks/${t._id}/edit`)}
-              onDelete={() => onDelete(t._id)}
-            />
-          </div>
-        ))}
-      </div>
+      {loading && <div className="alert alert-secondary">Loading tasks...</div>}
 
-      <Pagination
-        meta={meta}
-        onPageChange={(newPage) => setQuery((p) => ({ ...p, page: newPage }))}
-      />
+      {showEmptyState ? (
+        <div className="card border-0 shadow-sm">
+          <div className="card-body p-4 text-center">
+            <h5 className="mb-2">No tasks created yet</h5>
+            <p className="text-muted mb-3">
+              {isAdmin
+                ? "No tasks match your current filters. Try resetting filters or create a new task."
+                : "You don’t have any tasks yet. Create your first task to get started."}
+            </p>
+
+            <div className="d-flex justify-content-center gap-2">
+              <button
+                className="btn btn-dark"
+                onClick={() => navigate("/tasks/create")}
+              >
+                {isAdmin ? "Create / Assign Task" : "Create Task"}
+              </button>
+
+              {isAdmin && (
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={resetFilters}
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="row g-3">
+            {tasks.map((t) => (
+              <div className="col-12 col-md-6 col-lg-4" key={t._id}>
+                <TaskCard
+                  task={t}
+                  onView={() => navigate(`/tasks/${t._id}`)}
+                  onEdit={() =>
+                    navigate(`/tasks/${t._id}/edit`, {
+                      state: { returnTo: "/tasks" },
+                    })
+                  }
+                  onDelete={() => onDelete(t._id)}
+                />
+              </div>
+            ))}
+          </div>
+
+          <Pagination
+            meta={meta}
+            onPageChange={(newPage) =>
+              setQuery((p) => ({ ...p, page: newPage }))
+            }
+          />
+        </>
+      )}
     </div>
   );
 }

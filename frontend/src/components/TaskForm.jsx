@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchUsersApi } from "../api/userApi";
+import { useAuth } from "../context/AuthContext";
 
 export default function TaskForm({
   initialValues,
@@ -7,6 +9,9 @@ export default function TaskForm({
   onBack,
   submitLabel,
 }) {
+  const { user } = useAuth();
+  const meId = user?.userId || user?._id;
+
   const [form, setForm] = useState({
     title: initialValues.title || "",
     description: initialValues.description || "",
@@ -16,19 +21,65 @@ export default function TaskForm({
     userId: initialValues.userId || "",
   });
 
+  const [users, setUsers] = useState([]);
+  const [usersError, setUsersError] = useState("");
+
+  // Load users only for admin
+  useEffect(() => {
+    const run = async () => {
+      if (!isAdmin) return;
+
+      setUsersError("");
+      try {
+        // fetch enough users for dropdown
+        const res = await fetchUsersApi({ page: 1, limit: 200 });
+        const list = res?.data || [];
+
+        // Put current logged-in user first
+        const me = meId ? list.find((u) => u._id === meId) : null;
+        const others = meId ? list.filter((u) => u._id !== meId) : list;
+        const ordered = me ? [me, ...others] : list;
+
+        setUsers(ordered);
+
+        // Default assignment: select current admin (or first user if id mismatch)
+        setForm((p) => ({
+          ...p,
+          userId: p.userId || meId || ordered[0]?._id || "",
+        }));
+      } catch (e) {
+        setUsersError(
+          e?.response?.data?.message || e?.message || "Failed to load users",
+        );
+      }
+    };
+
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, meId]);
+
   const change = (e) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const submit = async (e) => {
     e.preventDefault();
+
+    // Build payload
     const payload = {
       title: form.title,
       description: form.description,
       status: form.status,
       priority: form.priority,
       dueDate: form.dueDate ? form.dueDate : null,
-      ...(isAdmin && form.userId ? { userId: form.userId } : {}),
     };
+
+    if (isAdmin) {
+      // If admin leaves it empty (or user list didn't load), assign to self
+      if (form.userId) payload.userId = form.userId;
+      else if (meId) payload.userId = meId;
+      // else: send without userId and backend will decide (but ideally meId exists)
+    }
+
     await onSubmit(payload);
   };
 
@@ -101,18 +152,34 @@ export default function TaskForm({
 
             {isAdmin && (
               <div className="col-12">
-                <label className="form-label">
-                  Assign to userId (optional)
-                </label>
-                <input
-                  className="form-control"
+                <label className="form-label">Assign To</label>
+
+                {usersError && (
+                  <div className="text-danger small mb-1">{usersError}</div>
+                )}
+
+                <select
+                  className="form-select"
                   name="userId"
-                  value={form.userId}
+                  value={form.userId || ""}
                   onChange={change}
-                  placeholder="Paste userId to assign"
-                />
+                  disabled={users.length === 0}
+                >
+                  {users.length === 0 ? (
+                    <option value="">
+                      {usersError ? "Unable to load users" : "Loading users..."}
+                    </option>
+                  ) : (
+                    users.map((u) => (
+                      <option key={u._id} value={u._id}>
+                        {u.name} ({u.email}){u._id === meId ? " — me" : ""}
+                      </option>
+                    ))
+                  )}
+                </select>
+
                 <div className="form-text">
-                  Leave empty to assign to yourself (backend default).
+                  Default is you. Choose another user to assign.
                 </div>
               </div>
             )}

@@ -7,6 +7,7 @@ export default function Register() {
 
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const onChange = (e) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -14,10 +15,20 @@ export default function Register() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     try {
       await registerApi(form);
-      navigate("/login", { replace: true });
+
+      setSuccess("Account created successfully! Redirecting to login...");
+
+      // Delay redirect slightly so user sees confirmation
+      setTimeout(() => {
+        navigate("/login", {
+          replace: true,
+          state: { justRegistered: true },
+        });
+      }, 1200);
     } catch (err) {
       setError(
         err?.response?.data?.message || err?.message || "Register failed",
@@ -33,6 +44,7 @@ export default function Register() {
             <h3 className="mb-3">Register</h3>
 
             {error && <div className="alert alert-danger">{error}</div>}
+            {success && <div className="alert alert-success">{success}</div>}
 
             <form onSubmit={onSubmit}>
               <div className="mb-3">

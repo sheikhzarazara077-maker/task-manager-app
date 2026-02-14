@@ -1,4 +1,5 @@
 import { formatDate } from "../utils/format";
+import { getPriorityBadgeClass, getStatusBadgeClass } from "../utils/badges";
 
 export default function TaskCard({ task, onView, onEdit, onDelete }) {
   return (
@@ -6,19 +7,20 @@ export default function TaskCard({ task, onView, onEdit, onDelete }) {
       <div className="card-body">
         <h5 className="card-title mb-2">{task.title}</h5>
 
-        <div className="mb-1">
-          <span className="badge text-bg-secondary me-2">Status</span>
-          <span>{task.status}</span>
+        <div className="mb-1 d-flex align-items-center gap-2">
+          <span className={`badge ${getStatusBadgeClass(task.status)}`}>
+            {task.status}
+          </span>
         </div>
 
-        <div className="mb-1">
-          <span className="badge text-bg-info me-2">Priority</span>
-          <span>{task.priority}</span>
+        <div className="mb-1 d-flex align-items-center gap-2">
+          <span className={`badge ${getPriorityBadgeClass(task.priority)}`}>
+            {task.priority}
+          </span>
         </div>
 
-        <div className="mb-0">
-          <span className="badge text-bg-dark me-2">Due</span>
-          <span>{formatDate(task.dueDate)}</span>
+        <div className="mb-0 d-flex align-items-center gap-2">
+          <span className="badge text-bg-dark">{formatDate(task.dueDate)}</span>
         </div>
       </div>
 
